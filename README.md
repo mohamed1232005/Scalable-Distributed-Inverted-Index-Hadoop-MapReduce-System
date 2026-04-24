@@ -59,15 +59,86 @@ MiniProject_1_BigData/
 
 ## 📚 Dataset
 
-- Source: **Project Gutenberg**
-- Number of books: **20**
-- Format: Plain text (UTF-8)
+- Source: **Project Gutenberg – Top Downloaded Books**
+- Dataset Link: https://www.gutenberg.org/browse/scores/top
+- Number of books used: **20**
+- Format: Plain Text (UTF-8)
 - Total size: ~19 MB
-- Storage path in HDFS:
-  
+
+### 🔗 Dataset Selection Justification
+
+The dataset was selected from the official **Project Gutenberg "Top 100 EBooks" page**, which lists the most frequently downloaded public-domain books.
+
+- This page dynamically ranks books based on **download frequency over time (daily, weekly, monthly)** :contentReference[oaicite:0]{index=0}  
+- It provides a curated list of **popular, high-quality, and diverse literary works**  
+- Ensures dataset relevance and avoids arbitrary book selection  
+
+Example books from this page include:
+- *Frankenstein* — Mary Shelley  
+- *Moby Dick* — Herman Melville  
+- *The City of God* — St. Augustine :contentReference[oaicite:1]{index=1}  
+
+---
+
+### 📖 About Project Gutenberg
+
+**Project Gutenberg** is the world's oldest digital library, founded in 1971, offering **free access to tens of thousands of public-domain books** in multiple formats :contentReference[oaicite:2]{index=2}.
+
+Key characteristics:
+- ✔ Over **75,000+ free eBooks**
+- ✔ Primarily public-domain literature
+- ✔ Available in plain text, HTML, EPUB, etc.
+- ✔ Open access and freely distributable
+
+---
+
+### 📂 Dataset Storage in HDFS
+
+All selected books were uploaded to:
+
 ```
-[/user/student/library/
-](https://www.gutenberg.org/browse/scores/top)```
+/user/student/library/
+```
+
+Verification:
+
+```bash
+hdfs dfs -ls /user/student/library/
+```
+
+---
+
+### 📊 Dataset Summary
+
+| Metric | Value |
+|------|------|
+| Number of Books | 20 |
+| Total Size | ~19 MB |
+| Largest File | ~5.4 MB |
+| Format | Plain Text |
+| Encoding | UTF-8 |
+| Source | Project Gutenberg |
+
+---
+
+### 🧠 Why This Dataset is Suitable
+
+| Reason | Explanation |
+|------|------------|
+| Real-world data | Books simulate large text corpora used in search engines |
+| Scalable | Can easily scale to hundreds or thousands of books |
+| Clean format | Plain text simplifies preprocessing |
+| Public domain | No copyright restrictions |
+| Diversity | Covers multiple authors, genres, and writing styles |
+
+---
+
+### ⚠️ Notes
+
+- Only **plain text versions** of books were used (no HTML or EPUB)
+- Files were cleaned to remove metadata headers when necessary
+- Dataset size (~19 MB) is small for Hadoop, but sufficient for demonstrating distributed processing concepts
+
 
 ---
 
