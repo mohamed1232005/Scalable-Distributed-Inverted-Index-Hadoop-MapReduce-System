@@ -177,53 +177,146 @@ if word.isalpha():
 
 ## 🔁 MapReduce Workflow
 
-### 🟦 Mapper
+The Reverse Index is built using the standard Hadoop MapReduce pipeline:
 
-**Input:** Raw text line  
-**Output:** `(word, document_name)`
-
-Example:
 ```
-whale    MobyDick.txt
-sea      MobyDick.txt
+Input Text Files → Mapper → Combiner → Shuffle & Sort → Reducer → Reverse Index Output
 ```
 
 ---
 
-### 🟨 Combiner (Bonus)
+### 🟦 Mapper Phase
 
-**Purpose:** Reduce shuffle size
+The Mapper reads each input book line by line from HDFS, cleans the text, removes stop words, and emits each valid word with the document name where it appeared.
 
+| Item | Description |
+|---|---|
+| Input | Raw text line from a book file |
+| Processing | Lowercase text, remove punctuation, split into tokens, remove stop words, keep alphabetic words only |
+| Output Key | `word` |
+| Output Value | `document_name` |
+| Output Pair | `(word, document_name)` |
+
+#### Mapper Input Example
+
+```text
+Call me Ishmael. Some years ago...
 ```
-(whale, MobyDick.txt) x 12 → (whale, MobyDick.txt:12)
+
+#### Mapper Output Example
+
+```text
+call    MobyDick.txt
+ishmael MobyDick.txt
+years   MobyDick.txt
+ago     MobyDick.txt
 ```
 
 ---
 
-### 🟥 Reducer
+### 🟨 Combiner Phase
 
-**Input:**
-```
-whale    MobyDick.txt:12, book2.txt:3
+The Combiner is an optional local optimization that runs after the Mapper and before the Shuffle phase. It aggregates repeated `(word, document)` pairs locally on each mapper node to reduce the amount of intermediate data sent across the network.
+
+| Item | Description |
+|---|---|
+| Input | Mapper output pairs |
+| Processing | Count repeated occurrences of the same word within the same document locally |
+| Output Key | `word` |
+| Output Value | `document_name:local_count` |
+| Output Pair | `(word, document_name:local_count)` |
+
+#### Combiner Input Example
+
+```text
+whale   MobyDick.txt
+whale   MobyDick.txt
+whale   MobyDick.txt
+sea     MobyDick.txt
 ```
 
-**Output:**
-```
-whale --> MobyDick.txt:12, book2.txt:3
+#### Combiner Output Example
+
+```text
+whale   MobyDick.txt:3
+sea     MobyDick.txt:1
 ```
 
 ---
 
-## 🧮 Reverse Index Output Format
+### 🟪 Shuffle and Sort Phase
 
-```
-word --> document1.txt:frequency, document2.txt:frequency
+The Shuffle and Sort phase is handled automatically by Hadoop. It transfers intermediate mapper or combiner output across the cluster, groups records by key, and ensures that all values belonging to the same word are sent to the same reducer.
+
+| Item | Description |
+|---|---|
+| Input | Combiner output if combiner is enabled; otherwise raw Mapper output |
+| Processing | Partition by key, transfer data across nodes, sort keys alphabetically, group all values for the same word |
+| Output Key | `word` |
+| Output Value | List of document-frequency values |
+| Output Group | `(word, [document_name:count, document_name:count, ...])` |
+
+#### Shuffle Input Example
+
+```text
+whale   MobyDick.txt:3
+whale   MobyDick.txt:5
+whale   Book2.txt:2
+sea     MobyDick.txt:1
+sea     Book3.txt:4
 ```
 
-Example:
+#### Shuffle Output Example
+
+```text
+whale   [MobyDick.txt:3, MobyDick.txt:5, Book2.txt:2]
+sea     [MobyDick.txt:1, Book3.txt:4]
 ```
-aaron --> book1.txt:3, book2.txt:1
-abating --> book1.txt:2, book3.txt:2
+
+#### Why Shuffle Matters
+
+The Shuffle phase is one of the most expensive stages in MapReduce because it requires network communication between nodes. Using the Combiner reduces the number of records sent through Shuffle, which improves performance.
+
+---
+
+### 🟥 Reducer Phase
+
+The Reducer receives one word at a time with all document-frequency values associated with that word. It merges counts for the same document and produces the final reverse index entry.
+
+| Item | Description |
+|---|---|
+| Input | Grouped key-value pairs from Shuffle and Sort |
+| Processing | Sum counts per document for each word and format the final index entry |
+| Output Key | `word` |
+| Output Value | `document1.txt:frequency, document2.txt:frequency, ...` |
+| Final Output | `word --> document1.txt:frequency, document2.txt:frequency, ...` |
+
+#### Reducer Input Example
+
+```text
+whale   [MobyDick.txt:3, MobyDick.txt:5, Book2.txt:2]
+```
+
+#### Reducer Output Example
+
+```text
+whale --> MobyDick.txt:8, Book2.txt:2
+```
+
+---
+
+### ✅ Final Reverse Index Output Format
+
+```text
+word --> document1.txt:frequency, document2.txt:frequency, document3.txt:frequency
+```
+
+#### Final Output Example
+
+```text
+aaron --> Chambers'sTwentiethCentury.txt:3, TheBlueCastle_anovel.txt:1, TheCompleteWorksofWilliamShakespeare.txt:98
+abating --> Chambers'sTwentiethCentury.txt:2, Dracula.txt:2, MobyDick.txt:2
+abdomen --> Chambers'sTwentiethCentury.txt:6
 ```
 
 ---
