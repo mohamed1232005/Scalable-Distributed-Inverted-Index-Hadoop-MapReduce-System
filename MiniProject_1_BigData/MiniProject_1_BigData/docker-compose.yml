@@ -1,0 +1,82 @@
+version: "3"
+
+services:
+  namenode:
+    image: apache/hadoop:3
+    hostname: namenode
+    container_name: namenode
+    user: root
+    env_file:
+      - ./hadoop.env
+    command: ["hdfs", "namenode"]
+    networks:
+      - hadoop
+
+  datanode1:
+    image: apache/hadoop:3
+    hostname: datanode1
+    container_name: datanode1
+    user: root
+    env_file:
+      - ./hadoop.env
+    command: ["hdfs", "datanode"]
+    networks:
+      - hadoop
+    depends_on:
+      - namenode
+
+  datanode2:
+    image: apache/hadoop:3
+    hostname: datanode2
+    container_name: datanode2
+    user: root
+    env_file:
+      - ./hadoop.env
+    command: ["hdfs", "datanode"]
+    networks:
+      - hadoop
+    depends_on:
+      - namenode
+
+  resourcemanager:
+    image: apache/hadoop:3
+    hostname: resourcemanager
+    container_name: resourcemanager
+    user: root
+    env_file:
+      - ./hadoop.env
+    command: ["yarn", "resourcemanager"]
+    networks:
+      - hadoop
+    depends_on:
+      - namenode
+
+  nodemanager1:
+    image: apache/hadoop:3
+    hostname: nodemanager1
+    container_name: nodemanager1
+    user: root
+    env_file:
+      - ./hadoop.env
+    command: ["yarn", "nodemanager"]
+    networks:
+      - hadoop
+    depends_on:
+      - resourcemanager
+
+  nodemanager2:
+    image: apache/hadoop:3
+    hostname: nodemanager2
+    container_name: nodemanager2
+    user: root
+    env_file:
+      - ./hadoop.env
+    command: ["yarn", "nodemanager"]
+    networks:
+      - hadoop
+    depends_on:
+      - resourcemanager
+
+networks:
+  hadoop:
+    driver: bridge
